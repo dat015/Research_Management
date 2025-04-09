@@ -17,6 +17,53 @@ namespace ResearchManagement.Api.controllers
         {
             _researchTopicRepository = researchTopicRepository;
         }
+        [HttpPost("reportprogress")]
+        public async Task<IActionResult> ReportProgress([FromForm] progress_report_dto progressReportDto, IFormFile file)
+        {
+            if (progressReportDto == null)
+            {
+                return BadRequest("Invalid data.");
+            }
+
+            // Xử lý file nếu có
+            if (file != null && file.Length > 0)
+            {
+                // Đường dẫn lưu file (có thể thay đổi theo cấu hình của bạn)
+                var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "Uploads");
+                if (!Directory.Exists(uploadsFolder))
+                {
+                    Directory.CreateDirectory(uploadsFolder);
+                }
+
+                var filePath = Path.Combine(uploadsFolder, file.FileName);
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                // Gán đường dẫn file vào DTO
+                progressReportDto.FilePath = filePath;
+            }
+
+            var result = await _researchTopicRepository.reportProgress(progressReportDto);
+            if (result)
+            {
+                return Ok(new { message = "Progress reported successfully.", filePath = progressReportDto.FilePath });
+            }
+            return BadRequest(new { message = "Failed to report progress." });
+        }
+
+        [HttpGet("approvedbutnotcompleted/{lectureId}")]
+        public async Task<IActionResult> GetApprovedButNotCompletedRecords(int lectureId)
+        {
+            var researchTopics = await _researchTopicRepository.getApprovedButNotCompletedRecords(lectureId);
+            if (researchTopics == null || !researchTopics.Any())
+            {
+                return NotFound("No approved but not completed records found.");
+            }
+            // Return the list of research topics
+            return Ok(researchTopics);
+        }
 
         [HttpPost("create")]
         public async Task<IActionResult> CreateResearchTopic([FromBody] research_topic_dto researchTopicDto)
@@ -63,6 +110,7 @@ namespace ResearchManagement.Api.controllers
             }
             return Ok(researchTopic);
         }
+
 
         [HttpGet("researchtopics/user/{userId}")]
         public async Task<IActionResult> GetResearchTopicsByUserId(int userId)

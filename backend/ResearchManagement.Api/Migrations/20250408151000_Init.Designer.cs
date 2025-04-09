@@ -12,8 +12,8 @@ using ResearchManagement.Api.data;
 namespace ResearchManagement.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250406025857_InitialCreate")]
-    partial class InitialCreate
+    [Migration("20250408151000_Init")]
+    partial class Init
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

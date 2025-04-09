@@ -19,13 +19,13 @@ namespace ResearchManagement.Api.repositories
             _context = context;
         }
         // This method is not implemented yet. It should create a new research topic in the database.
-        public Task<bool> CreateResearchTopic([FromBody]research_topic_dto researchTopicDto)
+        public Task<bool> CreateResearchTopic(research_topic_dto researchTopicDto)
         {
             if (researchTopicDto == null)
             {
                 throw new ArgumentNullException(nameof(researchTopicDto));
             }
-            if(LimitedResearchTopic(researchTopicDto))
+            if (LimitedResearchTopic(researchTopicDto))
             {
                 throw new InvalidOperationException("User has reached the limit of research topics.");
             }
@@ -120,25 +120,29 @@ namespace ResearchManagement.Api.repositories
             };
         }
 
-        public Task<List<research_topic_dto>> GetResearchTopicsByUserId(int userId)
+        public Task<List<ResearchTopic>> GetResearchTopicsByUserId(int userId)
         {
             // Retrieve research topics for a specific user
-            var researchTopics = _context.ResearchTopics.Where(rt => rt.UserId == userId).ToListAsync();
+            var researchTopics = _context.ResearchTopics.Where(rt => rt.UserId == userId)
+            .Select(rt => new ResearchTopic
+            {
+                TopicId = rt.TopicId,
+                UserId = rt.UserId,
+                Title = rt.Title,
+                Field = rt.Field,
+                Objective = rt.Objective,
+                Method = rt.Method,
+                StartDate = rt.StartDate,
+                EndDate = rt.EndDate,
+                Budget = rt.Budget,
+                Status = rt.Status
+            })
+            .ToListAsync();
             return researchTopics.ContinueWith(task =>
             {
-                return task.Result.Select(rt => new research_topic_dto
-                {
-                    UserId = rt.UserId,
-                    Title = rt.Title,
-                    Field = rt.Field,
-                    Objective = rt.Objective,
-                    Method = rt.Method,
-                    StartDate = rt.StartDate,
-                    EndDate = rt.EndDate,
-                    Budget = rt.Budget,
-                    Status = rt.Status
-                }).ToList();
+                return task.Result.ToList();
             });
+
         }
 
         public Task<bool> UpdateResearchTopic(int id, research_topic_dto researchTopicDto)
@@ -167,6 +171,62 @@ namespace ResearchManagement.Api.repositories
 
             // Save changes to the context
             return _context.SaveChangesAsync().ContinueWith(task => task.Result > 0);
+        }
+
+        public async Task<List<dynamic>> getApprovedButNotCompletedRecords(int lectureId)
+        {
+            if (lectureId <= 0)
+            {
+                throw new ArgumentException("Invalid lecture ID", nameof(lectureId));
+            }
+
+            try
+            {
+                var approvedTopics = await _context.ResearchTopics
+                    .Where(rt => rt.Status != "Pending" && rt.Status != "Completed" && rt.UserId == lectureId && rt.EndDate >= DateTime.Now)
+                    .ToListAsync();
+                var approvedTopicsDto = approvedTopics.Select(rt => new
+                {
+                    TopicId = rt.TopicId,
+                    Title = rt.Title,
+
+                }).ToList()
+                .Select(item => (dynamic)item).ToList();
+                return approvedTopicsDto;
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (e.g., log the error)
+                throw new Exception("Error retrieving research topics", ex);
+            }
+        }
+
+        public Task<bool> reportProgress(progress_report_dto progressReportDto)
+        {
+            if (progressReportDto == null)
+            {
+                throw new ArgumentNullException(nameof(progressReportDto));
+            }
+            // Map the DTO to the entity model
+            var progressReport = new ProgressReport
+            {
+                TopicId = progressReportDto.TopicId,
+                ReportDate = progressReportDto.ReportDate,
+                Description = progressReportDto.Description,
+                FilePath = progressReportDto.FilePath,
+                CreatedAt = DateTime.Now
+            };
+            try
+            {
+                // Add the progress report to the context
+                _context.ProgressReports.Add(progressReport);
+                return _context.SaveChangesAsync().ContinueWith(task => task.Result > 0);
+            }
+            catch (Exception ex)
+            {
+                // Handle exceptions (e.g., log the error)
+                throw new Exception("Error creating progress report", ex);
+            }
         }
     }
 

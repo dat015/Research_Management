@@ -27,6 +27,7 @@ namespace ResearchManagement.Api.models
         [Required(ErrorMessage = "Vai trò là bắt buộc")]
         [MaxLength(50, ErrorMessage = "Vai trò không được vượt quá 50 ký tự")]
         public string Role { get; set; } // Lecturer, CouncilMember, Admin
+        public bool isSeniorCouncilMember { get; set; } = false; // true nếu là hội đồng trưởng   
 
         [MaxLength(100, ErrorMessage = "Khoa/Phòng ban không được vượt quá 100 ký tự")]
         public string? Department { get; set; }

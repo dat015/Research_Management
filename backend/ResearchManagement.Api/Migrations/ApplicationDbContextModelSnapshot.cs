@@ -143,6 +143,89 @@ namespace ResearchManagement.Api.Migrations
                     b.ToTable("FinalReports");
                 });
 
+            modelBuilder.Entity("ResearchManagement.Api.models.Issue", b =>
+                {
+                    b.Property<int>("IssueId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("IssueId"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Impact")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Resolution")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TopicId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("milestone_id")
+                        .HasColumnType("int");
+
+                    b.HasKey("IssueId");
+
+                    b.HasIndex("TopicId");
+
+                    b.HasIndex("milestone_id");
+
+                    b.ToTable("Issues");
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.Milestone", b =>
+                {
+                    b.Property<int>("MilestoneId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("MilestoneId"));
+
+                    b.Property<DateTime?>("CompletionDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EndDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("ProgressPercentage")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TopicId")
+                        .HasColumnType("int");
+
+                    b.HasKey("MilestoneId");
+
+                    b.HasIndex("TopicId");
+
+                    b.ToTable("Milestones");
+                });
+
             modelBuilder.Entity("ResearchManagement.Api.models.Notification", b =>
                 {
                     b.Property<int>("NotificationId")
@@ -195,17 +278,71 @@ namespace ResearchManagement.Api.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("nvarchar(255)");
 
+                    b.Property<int>("MilestoneId")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("ReportDate")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("TopicId")
                         .HasColumnType("int");
 
+                    b.Property<decimal?>("usedAmount")
+                        .HasColumnType("decimal(18,2)");
+
                     b.HasKey("ReportId");
+
+                    b.HasIndex("MilestoneId")
+                        .IsUnique();
 
                     b.HasIndex("TopicId");
 
                     b.ToTable("ProgressReports");
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.ProgressReportIssue", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Impact")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("IssueId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ProgressReportReportId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ReportId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Resolution")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("ResolvedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProgressReportReportId");
+
+                    b.ToTable("ProgressReportIssue");
                 });
 
             modelBuilder.Entity("ResearchManagement.Api.models.Publication", b =>
@@ -257,8 +394,14 @@ namespace ResearchManagement.Api.Migrations
                     b.Property<decimal>("Budget")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<string>("CouncilFeedback")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<int?>("CurrentProgress")
+                        .HasColumnType("int");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
@@ -335,6 +478,9 @@ namespace ResearchManagement.Api.Migrations
                     b.Property<int>("TopicId")
                         .HasColumnType("int");
 
+                    b.Property<float>("TotalScore")
+                        .HasColumnType("real");
+
                     b.HasKey("ReviewId");
 
                     b.HasIndex("CouncilMemberId");
@@ -371,6 +517,32 @@ namespace ResearchManagement.Api.Migrations
                     b.HasKey("ConfigId");
 
                     b.ToTable("SystemConfigs");
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.TopicReviewAssignment", b =>
+                {
+                    b.Property<int>("AssignmentId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AssignmentId"));
+
+                    b.Property<bool>("HasReviewed")
+                        .HasColumnType("bit");
+
+                    b.Property<int?>("ReviewerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("TopicId")
+                        .HasColumnType("int");
+
+                    b.HasKey("AssignmentId");
+
+                    b.HasIndex("ReviewerId");
+
+                    b.HasIndex("TopicId");
+
+                    b.ToTable("TopicReviewAssignments");
                 });
 
             modelBuilder.Entity("ResearchManagement.Api.models.User", b =>
@@ -410,6 +582,9 @@ namespace ResearchManagement.Api.Migrations
 
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("datetime2");
+
+                    b.Property<bool>("isSeniorCouncilMember")
+                        .HasColumnType("bit");
 
                     b.HasKey("UserId");
 
@@ -463,6 +638,36 @@ namespace ResearchManagement.Api.Migrations
                     b.Navigation("ResearchTopic");
                 });
 
+            modelBuilder.Entity("ResearchManagement.Api.models.Issue", b =>
+                {
+                    b.HasOne("ResearchManagement.Api.models.ResearchTopic", "Topic")
+                        .WithMany("Issues")
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ResearchManagement.Api.models.Milestone", "Milestone")
+                        .WithMany()
+                        .HasForeignKey("milestone_id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Milestone");
+
+                    b.Navigation("Topic");
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.Milestone", b =>
+                {
+                    b.HasOne("ResearchManagement.Api.models.ResearchTopic", "ResearchTopic")
+                        .WithMany("Milestones")
+                        .HasForeignKey("TopicId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ResearchTopic");
+                });
+
             modelBuilder.Entity("ResearchManagement.Api.models.Notification", b =>
                 {
                     b.HasOne("ResearchManagement.Api.models.ResearchTopic", "ResearchTopic")
@@ -482,13 +687,32 @@ namespace ResearchManagement.Api.Migrations
 
             modelBuilder.Entity("ResearchManagement.Api.models.ProgressReport", b =>
                 {
+                    b.HasOne("ResearchManagement.Api.models.Milestone", "Milestone")
+                        .WithOne("ProgressReport")
+                        .HasForeignKey("ResearchManagement.Api.models.ProgressReport", "MilestoneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ResearchManagement.Api.models.ResearchTopic", "ResearchTopic")
                         .WithMany("ProgressReports")
                         .HasForeignKey("TopicId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.Navigation("Milestone");
+
                     b.Navigation("ResearchTopic");
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.ProgressReportIssue", b =>
+                {
+                    b.HasOne("ResearchManagement.Api.models.ProgressReport", "ProgressReport")
+                        .WithMany("Issues")
+                        .HasForeignKey("ProgressReportReportId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProgressReport");
                 });
 
             modelBuilder.Entity("ResearchManagement.Api.models.Publication", b =>
@@ -532,6 +756,32 @@ namespace ResearchManagement.Api.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("ResearchManagement.Api.models.TopicReviewAssignment", b =>
+                {
+                    b.HasOne("ResearchManagement.Api.models.User", "Reviewer")
+                        .WithMany()
+                        .HasForeignKey("ReviewerId");
+
+                    b.HasOne("ResearchManagement.Api.models.ResearchTopic", "ResearchTopic")
+                        .WithMany("TopicReviewAssignments")
+                        .HasForeignKey("TopicId");
+
+                    b.Navigation("ResearchTopic");
+
+                    b.Navigation("Reviewer");
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.Milestone", b =>
+                {
+                    b.Navigation("ProgressReport")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ResearchManagement.Api.models.ProgressReport", b =>
+                {
+                    b.Navigation("Issues");
+                });
+
             modelBuilder.Entity("ResearchManagement.Api.models.ResearchTopic", b =>
                 {
                     b.Navigation("BudgetDetail");
@@ -540,11 +790,17 @@ namespace ResearchManagement.Api.Migrations
 
                     b.Navigation("FinalReport");
 
+                    b.Navigation("Issues");
+
+                    b.Navigation("Milestones");
+
                     b.Navigation("ProgressReports");
 
                     b.Navigation("Publications");
 
                     b.Navigation("Reviews");
+
+                    b.Navigation("TopicReviewAssignments");
                 });
 
             modelBuilder.Entity("ResearchManagement.Api.models.User", b =>

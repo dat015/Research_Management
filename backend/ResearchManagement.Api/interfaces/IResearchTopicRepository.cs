@@ -17,5 +17,16 @@ namespace ResearchManagement.Api.interfaces
         Task<List<ResearchTopic>> GetResearchTopicsByUserId(int userId);
         Task<List<dynamic>> getApprovedButNotCompletedRecords(int lectureId);
         Task<bool> reportProgress(progress_report_dto progressReportDto);
+        Task<List<milestone_dto>> GetMilestonesByTopicIdAsync(int topicId);
+        Task<List<topic_pending_dto>> GetPendingTopics();
+        Task<List<TopicDto>> GetApprovedButNotCompletedRecords(int userId);
+        Task<budget_dto> GetBudgetSummary(int userId, int topicId);
+        Task SubmitProgressReport(int userId, SubmitProgressReportDto dto);
+        Task<List<TopicDto>> GetTopicApprovalList(int userId);
+        Task<bool> AddMilestones(int topicId, List<milestone_dto> milestoneDto);
+        Task<List<progress_track>> GetProgressTrack(int topicId);
+        Task<bool> AddProgressReport(CreateReport progressReportDto);
+
+
     }
 }

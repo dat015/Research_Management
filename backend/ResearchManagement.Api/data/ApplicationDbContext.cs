@@ -22,6 +22,9 @@ namespace ResearchManagement.Api.data
         public DbSet<ActivityLog> ActivityLogs { get; set; }
         public DbSet<SystemConfig> SystemConfigs { get; set; }
         public DbSet<ComplianceRecord> ComplianceRecords { get; set; }
+        public DbSet<Milestone> Milestones { get; set; }
+        public DbSet<TopicReviewAssignment> TopicReviewAssignments { get; set; }
+        public DbSet<Issue> Issues { get; set; } // Thêm DbSet cho bảng Issues
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -33,4 +36,6 @@ namespace ResearchManagement.Api.data
         }
 
     }
+
+    
 }

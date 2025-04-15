@@ -85,7 +85,7 @@ namespace ResearchManagement.Api.Repositories
                 FullName = registerDto.FullName,
                 Email = registerDto.Email,
                 PasswordHash = passwordHash,
-                Role = registerDto.Role,
+                Role = registerDto.Role.Trim().ToLower(),
                 Department = registerDto.Department,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now

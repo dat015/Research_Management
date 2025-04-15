@@ -1,9 +1,10 @@
 {
   "version": 2,
-  "dgSpecHash": "a96yHBZjZKc=",
+  "dgSpecHash": "VfNTPWqxHX4=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Thao\\source\\Angular\\UTC2_research_management\\backend\\ResearchManagement.Api\\ResearchManagement.Api.csproj",
+  "projectFilePath": "C:\\Users\\Thao\\source\\Angular\\UTC2_research_management\\backend\\researchmanagement.api\\ResearchManagement.Api.csproj",
   "expectedPackageFiles": [
+    "C:\\Users\\Thao\\.nuget\\packages\\automapper\\14.0.0\\automapper.14.0.0.nupkg.sha512",
     "C:\\Users\\Thao\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
     "C:\\Users\\Thao\\.nuget\\packages\\azure.identity\\1.11.4\\azure.identity.1.11.4.nupkg.sha512",
     "C:\\Users\\Thao\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",

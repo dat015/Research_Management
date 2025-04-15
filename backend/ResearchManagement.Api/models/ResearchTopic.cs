@@ -39,6 +39,7 @@ namespace ResearchManagement.Api.models
         [Required(ErrorMessage = "Kinh phí là bắt buộc")]
         [Range(0, double.MaxValue, ErrorMessage = "Kinh phí phải là số không âm")]
         public decimal Budget { get; set; }
+        public string? CouncilFeedback { get; set; } 
 
         [Required(ErrorMessage = "Trạng thái là bắt buộc")]
         [MaxLength(50, ErrorMessage = "Trạng thái không được vượt quá 50 ký tự")]
@@ -50,6 +51,8 @@ namespace ResearchManagement.Api.models
         [Required]
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
+        public int? CurrentProgress { get; set; } // Tiến độ hiện tại (0-100%)
+
         // Navigation properties
         public User User { get; set; }
         public ICollection<ProgressReport> ProgressReports { get; set; }
@@ -58,5 +61,8 @@ namespace ResearchManagement.Api.models
         public ICollection<Review> Reviews { get; set; }
         public Budget? BudgetDetail { get; set; }
         public ICollection<ComplianceRecord> ComplianceRecords { get; set; }
+        public ICollection<TopicReviewAssignment> TopicReviewAssignments {get; set;}
+        public ICollection<Milestone> Milestones { get; set; } // Thêm thuộc tính này để liên kết với bảng Milestones
+        public ICollection<Issue> Issues { get; set; } // Thêm thuộc tính này để liên kết với bảng Issues
     }
 }

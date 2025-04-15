@@ -169,3 +169,4 @@ C:\Users\Thao\source\Angular\UTC2_research_management\backend\ResearchManagement
 C:\Users\Thao\source\Angular\UTC2_research_management\backend\ResearchManagement.Api\obj\Debug\net8.0\ref\ResearchManagement.Api.dll
 C:\Users\Thao\source\Angular\UTC2_research_management\backend\ResearchManagement.Api\bin\Debug\net8.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
 C:\Users\Thao\source\Angular\UTC2_research_management\backend\ResearchManagement.Api\obj\Debug\net8.0\ResearchManagement.Api.sourcelink.json
+C:\Users\Thao\source\Angular\UTC2_research_management\backend\ResearchManagement.Api\bin\Debug\net8.0\AutoMapper.dll

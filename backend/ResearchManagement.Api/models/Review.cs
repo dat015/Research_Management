@@ -29,6 +29,7 @@ namespace ResearchManagement.Api.models
         [Range(1, 10, ErrorMessage = "Điểm tính ứng dụng phải từ 1 đến 10")]
         public int? ApplicabilityScore { get; set; }
 
+        public float TotalScore { get; set; }
         public string? Comments { get; set; }
 
         [MaxLength(50, ErrorMessage = "Quyết định không được vượt quá 50 ký tự")]
@@ -38,7 +39,7 @@ namespace ResearchManagement.Api.models
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
         // Navigation properties
-        public ResearchTopic ResearchTopic { get; set; }
-        public User User { get; set; }
+        public ResearchTopic? ResearchTopic { get; set; }
+        public User? User { get; set; }
     }
 }

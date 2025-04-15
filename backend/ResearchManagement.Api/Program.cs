@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using ResearchManagement.Api.data;
 using ResearchManagement.Api.interfaces;
+using ResearchManagement.Api.mappings;
 using ResearchManagement.Api.repositories;
 using ResearchManagement.Api.Repositories;
 using System.Text;
@@ -18,6 +19,9 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 // Đăng ký repositories và services
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IResearchTopicRepository, ResearchTopicRepository>();
+builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
+
+builder.Services.AddAutoMapper(typeof(MappingProfile));
 
 builder.Services.AddCors(options =>
 {

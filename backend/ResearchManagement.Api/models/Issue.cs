@@ -13,12 +13,18 @@ namespace ResearchManagement.Api.models
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)] // Tự động tăng
         public int IssueId { get; set; } // Khóa chính
         public int TopicId { get; set; } // Khóa ngoại liên kết với ResearchTopic
+        [Required(ErrorMessage = "Description là bắt buộc")]
+
         public string Description { get; set; } // Mô tả vấn đề
+        [Required(ErrorMessage = "Description là bắt buộc")]
+
         public string Impact { get; set; } // Mức độ ảnh hưởng (low, medium, high)
+        [Required(ErrorMessage = "Description là bắt buộc")]
+
         public string Status { get; set; } // Trạng thái (open, resolved)
         public string Resolution { get; set; } // Giải pháp (nếu đã giải quyết)
         public int milestone_id { get; set; } // Khóa ngoại liên kết với milestone
-      
+
         // Quan hệ ngược với ResearchTopic
         [ForeignKey("TopicId")]
         public ResearchTopic Topic { get; set; }

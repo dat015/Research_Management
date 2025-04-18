@@ -26,6 +26,7 @@ namespace ResearchManagement.Api.interfaces
         Task<bool> AddMilestones(int topicId, List<milestone_dto> milestoneDto);
         Task<List<progress_track>> GetProgressTrack(int topicId);
         Task<bool> AddProgressReport(CreateReport progressReportDto);
+        
 
 
     }

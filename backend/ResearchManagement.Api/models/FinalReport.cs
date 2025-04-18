@@ -21,6 +21,14 @@ namespace ResearchManagement.Api.models
 
         [MaxLength(255, ErrorMessage = "Đường dẫn tệp không được vượt quá 255 ký tự")]
         public string? FilePath { get; set; }
+        [Required(ErrorMessage = "Ngày nộp báo cáo là bắt buộc")]
+        public DateTime SubmissionDate { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal? UsedAmount { get; set; } // Kinh phí sử dụng
+
+        [MaxLength(50)]
+        public string AcceptanceStatus { get; set; } = "Pending"; // Pending, Accepted, NotAccepted
 
         [Required]
         public DateTime CreatedAt { get; set; } = DateTime.Now;

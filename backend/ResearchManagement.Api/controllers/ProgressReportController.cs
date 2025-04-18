@@ -28,9 +28,10 @@ namespace ResearchManagement.Api.controllers
         [HttpPost("createReport")]
         public async Task<IActionResult> createReport([FromForm] CreateReport dto, IFormFile file)
         {
+            Console.WriteLine("dto" + dto);
             if (dto == null || dto.ProgressReport == null)
             {
-                return BadRequest("Dữ liệu không hợp lệ.");
+                return BadRequest(new { Message = "Dữ liệu không hợp lệ." });
             }
 
             if (file != null && file.Length > 0)
@@ -59,12 +60,13 @@ namespace ResearchManagement.Api.controllers
                 }
                 else
                 {
-                    return BadRequest("Không thể tạo báo cáo tiến độ.");
+                    return BadRequest(new { Message = "Không thể tạo báo cáo tiến độ." });
                 }
             }
             catch (Exception ex)
             {
-                return BadRequest("Lỗi: " + ex.Message);
+                return BadRequest(new { message = "Lỗi: " + ex.Message });
+
             }
         }
 
@@ -78,13 +80,19 @@ namespace ResearchManagement.Api.controllers
 
             if (milestone == null)
             {
-                return NotFound("Mốc tiến độ không tồn tại.");
+                return NotFound(new
+                {
+                    Message = "Mốc tiến độ không tồn tại."
+                });
             }
 
             // Kiểm tra xem mốc đã có báo cáo chưa
             if (milestone.ProgressReport != null)
             {
-                return BadRequest("Mốc tiến độ này đã được báo cáo.");
+                return BadRequest(new
+                {
+                    Message = "Mốc tiến độ này đã được báo cáo."
+                });
             }
 
             // Tạo báo cáo mới
@@ -123,7 +131,9 @@ namespace ResearchManagement.Api.controllers
 
             if (report == null)
             {
-                return NotFound("Chưa có báo cáo cho mốc này.");
+                return NotFound(new{
+                    Message = "Chưa có báo cáo cho mốc này."
+                });
             }
 
             return Ok(report);

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Logging.Console;
 using ResearchManagement.Api.data;
 using ResearchManagement.Api.dtos;
 using ResearchManagement.Api.interfaces;
@@ -15,11 +16,14 @@ namespace ResearchManagement.Api.repositories
     public class ResearchTopicRepository : IResearchTopicRepository
     {
         private readonly ApplicationDbContext _context;
+        private readonly ILogger<ResearchTopicRepository> _logger;
+
         private readonly string _uploadPath;
-        public ResearchTopicRepository(ApplicationDbContext context, IConfiguration configuration)
+        public ResearchTopicRepository(ApplicationDbContext context, IConfiguration configuration, ILogger<ResearchTopicRepository> logger)
         {
             _context = context;
             _uploadPath = configuration["UploadPath"] ?? "wwwroot/uploads";
+            _logger = logger;
         }
         // This method is not implemented yet. It should create a new research topic in the database.
         public async Task<bool> CreateResearchTopic(research_topic_dto researchTopicDto)
@@ -123,7 +127,7 @@ namespace ResearchManagement.Api.repositories
         private bool LimitedResearchTopic(research_topic_dto researchTopicDto)
         {
             var existingResearchTopics = _context.ResearchTopics
-                .Where(rt => rt.UserId == researchTopicDto.UserId)
+                .Where(rt => rt.UserId == researchTopicDto.UserId && rt.Status != "Reject" && rt.Status != "competed")
                 .ToList();
             return existingResearchTopics.Count >= 3; // Example condition
         }
@@ -602,6 +606,7 @@ namespace ResearchManagement.Api.repositories
                             milestone.ProgressPercentage = (int)milestoneDto.ProgressPercentage;
                             milestone.Description = milestoneDto.Status;
                             milestone.CompletionDate = milestoneDto.Status == "completed" ? DateTime.Now : null;
+
                             milestone.EndDate = DateTime.Now;
                             _context.Milestones.Update(milestone);
                         }
@@ -637,6 +642,14 @@ namespace ResearchManagement.Api.repositories
                 _context.ProgressReports.Add(progressReport);
 
                 await _context.SaveChangesAsync();
+
+                topic.CurrentProgress += dto.ProgressPercentage;
+                if (topic.CurrentProgress >= 100)
+                {
+                    topic.Status = "Completed";
+                }
+                _context.ResearchTopics.Update(topic);
+
                 await transaction.CommitAsync();
             }
             catch (Exception)
@@ -656,7 +669,8 @@ namespace ResearchManagement.Api.repositories
             {
                 var topics = await _context.ResearchTopics
                     .Include(t => t.User)
-                    .Include(t => t.TopicReviewAssignments).ThenInclude(a => a.Reviewer)
+                    .Include(t => t.Milestones)
+                    .Include(t => t.Issues)
                     .Where(t => t.Status != "Pending" && t.Status != "NeedsRevision" && t.Status != "Completed" && t.UserId == userId)
                     .Select(t => new TopicDto
                     {
@@ -672,7 +686,7 @@ namespace ResearchManagement.Api.repositories
                             EndDate = (DateTime)m.EndDate,
                             ProgressPercentage = m.ProgressPercentage,
                             CompletionDate = m.CompletionDate,
-                            Status = m.Description
+                            Status = m.Status
                         }).ToList(),
                         Issues = t.Issues.Select(i => new IssueDto_1
                         {
@@ -816,82 +830,280 @@ namespace ResearchManagement.Api.repositories
 
         public async Task<bool> AddProgressReport(CreateReport progressReportDto)
         {
+            _logger.LogInformation("CreateReport DTO: {@dto}", progressReportDto);
+
             if (progressReportDto == null)
             {
+                _logger.LogError("progressReportDto is null.");
                 throw new ArgumentNullException(nameof(progressReportDto));
             }
 
-            // Find the research topic by ID
-            var researchTopic = _context.ResearchTopics.Find(progressReportDto.ProgressReport.TopicId);
-            var milestone = _context.Milestones.Find(progressReportDto.ProgressReport.MilestoneId);
-            if (milestone == null)
-            {
-                throw new Exception("Mốc không tồn tại");
-            }
-            if (researchTopic == null)
-            {
-                return false;
-            }
-
-            if (milestone.EndDate < DateTime.Now || milestone.DueDate > DateTime.Now)
-            {
-                throw new Exception("Chưa tạo được báo cáo cho mốc này");
-            }
-
-            var existingReports = await _context.ProgressReports
-                .Where(pr => pr.TopicId == progressReportDto.ProgressReport.TopicId && pr.MilestoneId == progressReportDto.ProgressReport.MilestoneId)
-                .FirstOrDefaultAsync();
-            if (existingReports != null)
-            {
-                throw new Exception("Báo cáo đã tồn tại cho mốc này");
-            }
-            // Map the DTO to the entity model
-            var progressReport = new ProgressReport
-            {
-                TopicId = progressReportDto.ProgressReport.TopicId,
-                MilestoneId = progressReportDto.ProgressReport.MilestoneId,
-                ReportDate = progressReportDto.ProgressReport.ReportDate,
-                Description = progressReportDto.ProgressReport.Description,
-                FilePath = progressReportDto.ProgressReport.FilePath,
-                CreatedAt = DateTime.Now,
-                usedAmount = progressReportDto.ProgressReport.UsedAmount,
-            };
-            var listIssue = new List<Issue>();
-
-            if (progressReportDto.Issues != null)
-            {
-                foreach (var issue in progressReportDto.Issues)
-                {
-                    var newIssue = new Issue
-                    {
-                        TopicId = progressReportDto.ProgressReport.TopicId,
-                        milestone_id = progressReportDto.ProgressReport.MilestoneId,
-                        Description = issue.Description,
-                        Impact = issue.Impact,
-                        Status = issue.Status,
-                        Resolution = issue.Resolution,
-                        CreatedAt = DateTime.Now
-                    };
-                    listIssue.Add(newIssue);
-
-                }
-                await _context.Issues.AddRangeAsync(listIssue);
-                await _context.SaveChangesAsync();
-
-            }
-
-
-            // Add the progress report to the context
             try
             {
+                _logger.LogInformation("Bắt đầu thêm báo cáo tiến độ cho TopicId: {TopicId}, MilestoneId: {MilestoneId}",
+                    progressReportDto.ProgressReport.TopicId, progressReportDto.ProgressReport.MilestoneId);
+
+                var researchTopic = await _context.ResearchTopics.FindAsync(progressReportDto.ProgressReport.TopicId);
+                var milestone = await _context.Milestones.FindAsync(progressReportDto.ProgressReport.MilestoneId);
+
+
+
+                if (milestone == null)
+                {
+                    _logger.LogWarning("Không tìm thấy mốc với ID: {MilestoneId}", progressReportDto.ProgressReport.MilestoneId);
+                    throw new Exception("Mốc không tồn tại");
+                }
+
+                if (researchTopic == null)
+                {
+                    _logger.LogWarning("Không tìm thấy đề tài với ID: {TopicId}", progressReportDto.ProgressReport.TopicId);
+                    return false;
+                }
+
+
+
+                if (milestone.EndDate < DateTime.Now || milestone.DueDate > DateTime.Now)
+                {
+                    _logger.LogWarning("Không thể tạo báo cáo vì mốc không hợp lệ (DueDate: {DueDate}, EndDate: {EndDate})",
+                        milestone.DueDate, milestone.EndDate);
+                    throw new Exception("Chưa tạo được báo cáo cho mốc này");
+                }
+                var existingReport = await _context.ProgressReports
+                    .FirstOrDefaultAsync(pr => pr.TopicId == progressReportDto.ProgressReport.TopicId &&
+                                               pr.MilestoneId == progressReportDto.ProgressReport.MilestoneId);
+
+                var totalUsedAmount = await _context.ProgressReports
+                    .Where(p => p.TopicId == progressReportDto.ProgressReport.TopicId)
+                    .SumAsync(p => p.usedAmount);
+
+                if (totalUsedAmount > researchTopic.Budget)
+                {
+                    _logger.LogError("Tiền đã vượt mức cho phép. Used: {Used}, Budget: {Budget}", totalUsedAmount, researchTopic.Budget);
+                    throw new Exception("Tiền đã vượt mức cho phép");
+                }
+                //
+                //Sửa báo cáo
+                //
+                if (researchTopic.Status == "revision_required")
+                {
+                    researchTopic.Status = "completed";
+                    _context.Update(researchTopic);
+                    await _context.SaveChangesAsync();
+                    if (progressReportDto == null)
+                    {
+                        _logger.LogError("progressReportDto is null.");
+                        throw new ArgumentNullException(nameof(progressReportDto));
+                    }
+                    existingReport.ReportDate = progressReportDto.ProgressReport.ReportDate;
+                    existingReport.Description = progressReportDto.ProgressReport.Description;
+                    existingReport.FilePath = progressReportDto.ProgressReport.FilePath;
+                    existingReport.CreatedAt = DateTime.Now;
+                    existingReport.usedAmount = progressReportDto.ProgressReport.UsedAmount;
+
+                    _context.ProgressReports.Update(existingReport);
+                    await _context.SaveChangesAsync();
+
+                    var issues = new List<Issue>();
+                    if (progressReportDto.Issues != null)
+                    {
+                        foreach (var issue in progressReportDto.Issues)
+                        {
+                            var newIssue = new Issue
+                            {
+                                TopicId = progressReportDto.ProgressReport.TopicId,
+                                milestone_id = progressReportDto.ProgressReport.MilestoneId,
+                                Description = issue.Description,
+                                Impact = issue.Impact,
+                                Status = issue.Status,
+                                Resolution = issue.Resolution,
+                                CreatedAt = DateTime.Now
+                            };
+                            issues.Add(newIssue);
+                        }
+
+                        await _context.Issues.AddRangeAsync(issues);
+                        await _context.SaveChangesAsync();
+                    }
+                    milestone.Status = "completed";
+                    milestone.CompletionDate = DateTime.Now;
+                    _context.Milestones.Update(milestone);
+
+                    var Milestones = await _context.Milestones
+                        .Where(m => m.TopicId == progressReportDto.ProgressReport.TopicId)
+                        .ToListAsync();
+
+                    if (Milestones.All(m => m.CompletionDate != null))
+                    {
+                        researchTopic.Status = "completed";
+                        researchTopic.CurrentProgress = 100;
+                        researchTopic.UpdatedAt = DateTime.Now;
+                        _context.ResearchTopics.Update(researchTopic);
+
+                        var saveFinalReport = await UpdateReportFinal(existingReport);
+                        if (!saveFinalReport)
+                        {
+                            _logger.LogError("Lỗi khi tạo báo cáo cuối cùng.");
+                            throw new Exception("Lỗi khi tạo báo cáo cuối cùng");
+                        }
+                    }
+
+
+                    return true;
+                }
+
+
+                if (existingReport != null)
+                {
+                    _logger.LogWarning("Báo cáo đã tồn tại cho TopicId: {TopicId}, MilestoneId: {MilestoneId}",
+                        progressReportDto.ProgressReport.TopicId, progressReportDto.ProgressReport.MilestoneId);
+                    throw new Exception("Báo cáo đã tồn tại cho mốc này");
+                }
+
+
+
+                var progressReport = new ProgressReport
+                {
+                    TopicId = progressReportDto.ProgressReport.TopicId,
+                    MilestoneId = progressReportDto.ProgressReport.MilestoneId,
+                    ReportDate = progressReportDto.ProgressReport.ReportDate,
+                    Description = progressReportDto.ProgressReport.Description,
+                    FilePath = progressReportDto.ProgressReport.FilePath,
+                    CreatedAt = DateTime.Now,
+                    usedAmount = progressReportDto.ProgressReport.UsedAmount,
+                };
+
+                var listIssue = new List<Issue>();
+                if (progressReportDto.Issues != null)
+                {
+                    foreach (var issue in progressReportDto.Issues)
+                    {
+                        var newIssue = new Issue
+                        {
+                            TopicId = progressReportDto.ProgressReport.TopicId,
+                            milestone_id = progressReportDto.ProgressReport.MilestoneId,
+                            Description = issue.Description,
+                            Impact = issue.Impact,
+                            Status = issue.Status,
+                            Resolution = issue.Resolution,
+                            CreatedAt = DateTime.Now
+                        };
+                        listIssue.Add(newIssue);
+                    }
+
+                    await _context.Issues.AddRangeAsync(listIssue);
+                    await _context.SaveChangesAsync();
+                }
+
                 _context.ProgressReports.Add(progressReport);
+                milestone.Status = "completed";
+                milestone.CompletionDate = DateTime.Now;
+                _context.Milestones.Update(milestone);
+
+                var allMilestones = await _context.Milestones
+                    .Where(m => m.TopicId == progressReportDto.ProgressReport.TopicId)
+                    .ToListAsync();
+
+                if (allMilestones.All(m => m.CompletionDate != null))
+                {
+                    researchTopic.Status = "completed";
+                    researchTopic.CurrentProgress = 100;
+                    researchTopic.UpdatedAt = DateTime.Now;
+                    _context.ResearchTopics.Update(researchTopic);
+
+                    var saveFinalReport = await CreateReportFinal(progressReport);
+                    if (!saveFinalReport)
+                    {
+                        _logger.LogError("Lỗi khi tạo báo cáo cuối cùng.");
+                        throw new Exception("Lỗi khi tạo báo cáo cuối cùng");
+                    }
+                }
+
                 var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("Báo cáo tiến độ được thêm thành công.");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Lỗi khi thêm báo cáo tiến độ.");
+                throw new Exception("Lỗi tạo báo cáo tiến độ: " + ex.Message, ex);
+            }
+        }
+        private async Task<bool> UpdateReportFinal(ProgressReport progressReports)
+        {
+            if (progressReports == null)
+            {
+                _logger.LogError("ProgressReports là null khi tạo báo cáo cuối cùng.");
+                throw new ArgumentNullException(nameof(progressReports));
+            }
+
+            try
+            {
+                var topic = await _context.ResearchTopics
+                    .Where(t => t.TopicId == progressReports.TopicId)
+                    .ToListAsync();
+
+                var sumUsedAmount = topic.Sum(t => t.BudgetDetail?.UsedAmount ?? 0);
+
+                var finalReport = await _context.FinalReports.Where(f => f.TopicId == progressReports.TopicId).FirstOrDefaultAsync();
+                if (finalReport == null)
+                {
+                    return false;
+                }
+
+                finalReport.Summary = progressReports.Description;
+                finalReport.FilePath = progressReports.FilePath;
+                finalReport.CreatedAt = DateTime.Now;
+                finalReport.SubmissionDate = progressReports.ReportDate;
+                finalReport.UsedAmount = sumUsedAmount;
+                finalReport.AcceptanceStatus = "Pending";
+
+
+                _context.FinalReports.Update(finalReport);
+                var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("Đã tạo báo cáo cuối cùng cho TopicId: {TopicId}", progressReports.TopicId);
                 return result > 0;
             }
             catch (Exception ex)
             {
-                // Handle exceptions (e.g., log the error)
-                throw new Exception("Error creating progress report", ex);
+                _logger.LogError(ex, "❌ Lỗi khi tạo báo cáo cuối cùng.");
+                throw new Exception("Error creating final report", ex);
+            }
+        }
+        private async Task<bool> CreateReportFinal(ProgressReport progressReports)
+        {
+            if (progressReports == null)
+            {
+                _logger.LogError("ProgressReports là null khi tạo báo cáo cuối cùng.");
+                throw new ArgumentNullException(nameof(progressReports));
+            }
+
+            try
+            {
+                var topic = await _context.ResearchTopics
+                    .Where(t => t.TopicId == progressReports.TopicId)
+                    .ToListAsync();
+
+                var sumUsedAmount = topic.Sum(t => t.BudgetDetail?.UsedAmount ?? 0);
+
+                var reportFinal = new FinalReport
+                {
+                    TopicId = progressReports.TopicId,
+                    Summary = progressReports.Description,
+                    FilePath = progressReports.FilePath,
+                    CreatedAt = DateTime.Now,
+                    SubmissionDate = progressReports.ReportDate,
+                    UsedAmount = sumUsedAmount,
+                };
+
+                await _context.FinalReports.AddAsync(reportFinal);
+                var result = await _context.SaveChangesAsync();
+                _logger.LogInformation("Đã tạo báo cáo cuối cùng cho TopicId: {TopicId}", progressReports.TopicId);
+                return result > 0;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "❌ Lỗi khi tạo báo cáo cuối cùng.");
+                throw new Exception("Error creating final report", ex);
             }
         }
     }

@@ -20,6 +20,8 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IResearchTopicRepository, ResearchTopicRepository>();
 builder.Services.AddScoped<IBudgetRepository, BudgetRepository>();
+builder.Services.AddScoped<IFinalReportRepository,FinalReportRepository>();
+builder.Services.AddScoped<IEmailService,EmailService>();
 
 builder.Services.AddAutoMapper(typeof(MappingProfile));
 

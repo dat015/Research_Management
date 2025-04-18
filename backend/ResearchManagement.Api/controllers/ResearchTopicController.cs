@@ -33,7 +33,10 @@ namespace ResearchManagement.Api.controllers
             var progressTrack = await _researchTopicRepository.GetProgressTrack(topicId);
             if (progressTrack == null)
             {
-                return NotFound("Không tìm thấy thông tin tiến độ cho đề tài này.");
+                return NotFound(new
+                {
+                    Message = "Không tìm thấy thông tin tiến độ cho đề tài này."
+                });
             }
             return Ok(progressTrack);
         }
@@ -44,7 +47,10 @@ namespace ResearchManagement.Api.controllers
             var topic = await _context.ResearchTopics.FindAsync(topicId);
             if (topic == null)
             {
-                return NotFound("Đề tài không tồn tại.");
+                return NotFound(new
+                {
+                    Message = "Đề tài không tồn tại."
+                });
             }
             try
             {
@@ -67,7 +73,10 @@ namespace ResearchManagement.Api.controllers
 
             if (topic == null)
             {
-                return NotFound("Đề tài không tồn tại.");
+                return NotFound(new
+                {
+                    Message = "Đề tài không tồn tại."
+                });
             }
 
             // Xóa các mốc cũ
@@ -98,13 +107,16 @@ namespace ResearchManagement.Api.controllers
                 var topics = await _researchTopicRepository.GetTopicApprovalList(id);
                 if (topics == null || !topics.Any())
                 {
-                    return NotFound(new { Message = "Không tìm thấy đề tài nào." });
+                    return Ok(new List<TopicDto>());
                 }
                 return Ok(topics);
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new
+                {
+                    Message = ex.Message
+                });
             }
 
 
@@ -114,10 +126,16 @@ namespace ResearchManagement.Api.controllers
         public async Task<IActionResult> UpdateTopicProgress(int id, [FromBody] UpdateProgressDto dto)
         {
 
+
+
             var topic = await _context.ResearchTopics
                 .Include(t => t.Milestones)
                 .Include(t => t.Issues)
                 .FirstOrDefaultAsync(t => t.TopicId == id);
+
+            // if(topic.Status == "revision_required"){
+
+            // }
             if (dto.Milestones != null)
             {
                 topic.Milestones.Clear();
@@ -160,11 +178,50 @@ namespace ResearchManagement.Api.controllers
         public async Task<IActionResult> GetApprovedTopics()
         {
             var topics = await _context.ResearchTopics
-                .Where(t => t.Status == "Approved")
+                .Where(t => t.Status == "Approved" || t.Status == "completed" || t.Status == "revision_required")
+                .Include(u => u.User)
+                .Include(t => t.ProgressReports)
+                .Include(t => t.Milestones)
+                .Include(t => t.Issues)
                 .ToListAsync();
+            var researchList = new List<ResearchProgressDto>();
+            foreach (var topic in topics)
+            {
+                var researchProgress = new ResearchProgressDto
+                {
+                    Id = topic.TopicId,
+                    Title = topic.Title,
+                    Lecturer = topic.User.FullName,
+                    Department = topic.User.Department ?? "",
+                    StartDate = topic.StartDate,
+                    EndDate = topic.EndDate,
+                    CurrentProgress = topic.CurrentProgress ?? 0,
+                    Status = topic.Status,
+                    Milestones = topic.Milestones.Select(m => new MilestoneDto
+                    {
+                        MilestoneId = m.MilestoneId,
+                        Description = m.Description,
+                        DueDate = m.DueDate,
+                        EndDate = m.EndDate,
+                        ProgressPercentage = m.ProgressPercentage,
+                        CompletionDate = m.CompletionDate,
+                        Status = m.Status,
+                    }).ToList(),
+                    Issues = topic.Issues.Select(i => new IssueDto
+                    {
+                        IssueId = i.IssueId,
+                        Description = i.Description,
+                        Status = i.Status,
+                        Resolution = i.Resolution,
+                        Impact = i.Impact,
+                        TopicId = i.TopicId
 
-            var result = _mapper.Map<List<ResearchProgressDto>>(topics);
-            return Ok(result);
+                    }).ToList()
+                };
+                researchList.Add(researchProgress);
+            }
+
+            return Ok(researchList);
         }
         [HttpPut("{userId}/{id}/approve")]
         public async Task<IActionResult> ApproveTopic(int id, int userId, [FromBody] ApprovalDto dto)
@@ -182,11 +239,17 @@ namespace ResearchManagement.Api.controllers
                     .Include(t => t.TopicReviewAssignments)
                     .FirstOrDefaultAsync(t => t.TopicId == id);
                 if (topic == null)
-                    return NotFound("Không tìm thấy đề tài.");
+                    return NotFound(new
+                    {
+                        Message = "Không tìm thấy đề tài."
+                    });
 
                 var isReviewComplete = topic.TopicReviewAssignments.All(a => a.HasReviewed);
                 if (!isReviewComplete)
-                    return BadRequest("Đề tài chưa được xét duyệt đầy đủ.");
+                    return BadRequest(new
+                    {
+                        Message = "Đề tài chưa được xét duyệt đầy đủ."
+                    });
 
                 topic.Status = dto.Status;
                 topic.CouncilFeedback = string.IsNullOrEmpty(topic.CouncilFeedback)
@@ -212,11 +275,17 @@ namespace ResearchManagement.Api.controllers
                 if (assignment == null)
                     return Forbid("Bạn không được phân công xét duyệt đề tài này.");
                 if (assignment.HasReviewed)
-                    return BadRequest("Bạn đã xét duyệt đề tài này rồi.");
+                    return BadRequest(new
+                    {
+                        Message = "Bạn đã xét duyệt đề tài này rồi."
+                    });
 
                 var topic = await _context.ResearchTopics.FindAsync(id);
                 if (topic == null)
-                    return NotFound("Không tìm thấy đề tài.");
+                    return NotFound(new
+                    {
+                        Message = "Không tìm thấy đề tài."
+                    });
 
                 var review = new Review
                 {
@@ -272,7 +341,10 @@ namespace ResearchManagement.Api.controllers
         {
             if (progressReportDto == null)
             {
-                return BadRequest("Invalid data.");
+                return BadRequest(new
+                {
+                    Message = "Invalid data."
+                });
             }
             try
             {
@@ -315,7 +387,10 @@ namespace ResearchManagement.Api.controllers
             var researchTopics = await _researchTopicRepository.getApprovedButNotCompletedRecords(lectureId);
             if (researchTopics == null || !researchTopics.Any())
             {
-                return NotFound("No approved but not completed records found.");
+                return NotFound(new
+                {
+                    Message = "No approved but not completed records found."
+                });
             }
             // Return the list of research topics
             return Ok(researchTopics);
@@ -335,7 +410,7 @@ namespace ResearchManagement.Api.controllers
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { Message = ex.Message });
             }
         }
 
@@ -380,7 +455,9 @@ namespace ResearchManagement.Api.controllers
         {
             if (researchTopicDto == null)
             {
-                return BadRequest("Invalid data.");
+                return BadRequest(new{
+                    Message = "Invalid data."
+                });
             }
 
             var result = await _researchTopicRepository.UpdateResearchTopic(id, researchTopicDto);

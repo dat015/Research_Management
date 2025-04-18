@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "VfNTPWqxHX4=",
+  "dgSpecHash": "daXlWQLTm2U=",
   "success": true,
-  "projectFilePath": "C:\\Users\\Thao\\source\\Angular\\UTC2_research_management\\backend\\researchmanagement.api\\ResearchManagement.Api.csproj",
+  "projectFilePath": "C:\\Users\\Thao\\source\\Angular\\UTC2_research_management\\backend\\researchManagement.api\\ResearchManagement.Api.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Thao\\.nuget\\packages\\automapper\\14.0.0\\automapper.14.0.0.nupkg.sha512",
     "C:\\Users\\Thao\\.nuget\\packages\\azure.core\\1.38.0\\azure.core.1.38.0.nupkg.sha512",
